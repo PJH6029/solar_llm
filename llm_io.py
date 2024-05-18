@@ -15,27 +15,35 @@ load_dotenv()
 llm = ChatUpstage(upstage_api_key=os.getenv("UPSTAGE_API_KEY"), streaming=True)
 
 system_prompt_template = """
-I have a list of keywords related to a specific domain, 
-and I need you to generate a series of questions to gather detailed information for completing a task in that domain. 
-Based on the following keywords, please create specific and user-friendly questions that will help in collecting the necessary information:
+특정 도메인과 관련된 키워드 목록이 있는데,
+그리고 해당 영역의 작업을 완료하기 위한 자세한 정보를 수집하려면 일련의 질문을 생성해야 합니다.
+다음 키워드를 기반으로 필요한 정보를 수집하는 데 도움이 될 구체적이고 사용자 친화적인 질문을 작성하십시오.
 
 {keywords}
 
-For example, if the keywords are related to writing a self-introduction document, 
-such as name, age, background, skills, hobbies, achievements, goals, etc., 
-you should generate questions like:
+예를 들어 자기소개서 작성과 관련된 키워드가 있다면,
+이름, 나이, 배경, 기술, 취미, 업적, 목표 등
+다음과 같은 질문을 생성해야 합니다.
 
-What is your name?
-How old are you?
-Can you provide a brief background about yourself?
-What are your key skills?
-What hobbies do you enjoy?
-What achievements are you most proud of?
-What are your goals for the future?
+이름이 뭐에요?
+몇 살이에요?
+자신에 대한 간략한 배경을 제공해 주실 수 있나요?
+당신의 핵심 기술은 무엇입니까?
+어떤 취미를 즐기시나요?
+당신이 가장 자랑스러워하는 성과는 무엇입니까?
+미래에 대한 당신의 목표는 무엇입니까?
 
-Make sure the questions are clear, concise, and cover all the relevant aspects of the task. 
-Provide one question for each keyword.
-You should ask questions one by one, not all at once.
+질문이 명확하고 간결하며 작업과 관련된 모든 측면을 포괄하는지 확인하세요.
+각 키워드에 대해 하나의 질문을 제공하십시오.
+한꺼번에 질문하지 말고 하나씩 질문해야 합니다.
+
+질문에 대한 답변을 받은 이후에는,
+알맞게 이해했는지 확인하기 위해 답변을 되풀이해주십시오.
+예를 들어,
+Q. 이름이 뭐에요?
+A. 제 이름은 홍길동입니다.
+Q. 이름이 홍길동이시군요, 다음 질문입니다. 몇 살이신가요?
+와 같이 되풀이해주십시오.
 """
 
 chat_with_history_prompt = ChatPromptTemplate.from_messages(
@@ -47,7 +55,7 @@ chat_with_history_prompt = ChatPromptTemplate.from_messages(
 )
 
 chain = chat_with_history_prompt | llm | StrOutputParser()
-domain = "writing a self-introduction document"
+domain = "내가 가르치는 학생의 생활기록부를 작성하고 싶어"
 keywords = keyword_generator(domain)
 print(keywords)
 

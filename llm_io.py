@@ -8,6 +8,9 @@ import streamlit as st
 import gradio as gr
 
 from llm_domain import keyword_generator
+from llm_compeletion_check import is_completed
+from llm_prompt_generator import prompt_generator
+from llm_do_task import do
 
 st.title("Langchain Chat Demo")
 
@@ -55,8 +58,11 @@ chat_with_history_prompt = ChatPromptTemplate.from_messages(
 )
 
 chain = chat_with_history_prompt | llm | StrOutputParser()
-domain = "내가 가르치는 학생의 생활기록부를 작성하고 싶어"
-keywords = keyword_generator(domain)
+domain = "내가 가르치는 학생의 생활기록부를 400자 이내로 작성하고 싶어"
+print("Domain:", domain)
+keywords = keyword_generator(domain, num_keywords=5)
+num_keywords = len(list(filter(lambda line: len(line.split(".")) == 2, keywords.split("\n"))))
+print(f"{num_keywords} keywords:")
 print(keywords)
 
 def chat(message, history, keywords=keywords):
@@ -67,9 +73,33 @@ def chat(message, history, keywords=keywords):
     generator = chain.stream({"message": message, "history": history_langchain_format, "keywords": keywords})
 
     assistant = ""
-    for gen in generator:
-        assistant += gen
-        yield assistant
+    finish = is_completed(history_langchain_format, num_keywords)
+
+    if not finish:
+        for gen in generator:
+            assistant += gen
+            yield assistant
+    else:
+        histories = history_langchain_format[1:-1]
+        histories = [hist.content for hist in histories]
+        result_prompt = prompt_generator(domain, histories)
+        result = do(result_prompt)
+        print(type(result_prompt), type(result))
+        yield f"""
+        키워드 수집이 완료되었습니다.
+        
+        --------------------------------
+        
+        생성된 프롬프트는 다음과 같습니다.
+        
+        {result_prompt}
+        
+        --------------------------------
+        
+        작업 결과는 다음과 같습니다.
+        
+        {result}
+        """
 
 with gr.Blocks() as demo:
     chatbot = gr.ChatInterface(
@@ -78,7 +108,7 @@ with gr.Blocks() as demo:
         title="Chat with Langchain",
         description="This is a chat interface that uses Langchain to generate questions based on a list of keywords.",
     )
-    chatbot.chatbot.height = 300
+    chatbot.chatbot.height = 700
 
 if __name__ == "__main__":
     demo.launch()
